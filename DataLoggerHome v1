@@ -268,6 +268,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 float Celcius=0;
+float ArdTemp=0;
 
 
 
@@ -281,7 +282,7 @@ void setup()
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
-  Serial.println(F("Datalogger"));
+  Serial.println(F("Datalogger Home"));
   Serial.println(F("Version 1, Jan 2019"));
 
   Serial.print("Initializing SD card...");
@@ -369,6 +370,7 @@ void loop()
 
   sensors.requestTemperatures(); 
   Celcius=sensors.getTempCByIndex(0);
+  ArdTemp=GetTemp();
    
   // make a string for assembling the data to log:
   String dataString = "";
@@ -390,6 +392,9 @@ void loop()
 
   dataString += Celcius;
   dataString += " ";
+
+  dataString += ArdTemp;
+  dataString += " ";
   
   
   Serial.println(dataString); 
@@ -408,16 +413,6 @@ void loop()
     Serial.println("error opening datalog.txt");
   }
 
-
-
-
-
-
-
-
-
-
-  
 
   delay( 5000);
 }
@@ -649,4 +644,36 @@ void _DS1302_togglewrite( uint8_t data, uint8_t release)
       delayMicroseconds( 1);       // tCL=1000ns, tCDD=800ns
     }
   }
+}
+
+
+double GetTemp(void)
+{
+  unsigned int wADC;
+  double t;
+
+  // The internal temperature has to be used
+  // with the internal reference of 1.1V.
+  // Channel 8 can not be selected with
+  // the analogRead function yet.
+
+  // Set the internal reference and mux.
+  ADMUX = (_BV(REFS1) | _BV(REFS0) | _BV(MUX3));
+  ADCSRA |= _BV(ADEN);  // enable the ADC
+
+  delay(20);            // wait for voltages to become stable.
+
+  ADCSRA |= _BV(ADSC);  // Start the ADC
+
+  // Detect end-of-conversion
+  while (bit_is_set(ADCSRA,ADSC));
+
+  // Reading register "ADCW" takes care of how to read ADCL and ADCH.
+  wADC = ADCW;
+
+  // The offset of 324.31 could be wrong. It is just an indication.
+  t = (wADC - 324.31 ) / 1.22;
+
+  // The returned temperature is in degrees Celsius.
+  return (t);
 }
