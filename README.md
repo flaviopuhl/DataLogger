@@ -12,3 +12,4 @@ SD Card
   CS - pin 4 (for MKRZero SD: SDCARD_SS_PIN)
 DS18B20
   ONE_WIRE_BUS 2
+ATMega328 temperature
